@@ -1,0 +1,53 @@
+{
+  "defaultTemplateId": "business-development",
+  "templates": [
+    {
+      "id": "business-development",
+      "name": "Business Development",
+      "description": "Partnerships, growth deals, and pipeline leadership focus.",
+      "file": "business-development.tex"
+    },
+    {
+      "id": "gtm",
+      "name": "GTM",
+      "description": "Go-to-market strategy, launches, and revenue activation focus.",
+      "file": "gtm.tex"
+    },
+    {
+      "id": "business-operations",
+      "name": "Business Operations",
+      "description": "Operating model, process optimization, and cross-functional execution focus.",
+      "file": "business-operations.tex"
+    },
+    {
+      "id": "product-management",
+      "name": "Product Management",
+      "description": "Product strategy, roadmap delivery, and customer outcomes focus.",
+      "file": "product-management.tex"
+    },
+    {
+      "id": "enterprise-partnerships",
+      "name": "Enterprise Partnerships",
+      "description": "Strategic alliances, enterprise relationship management, and partner growth focus.",
+      "file": "enterprise-partnerships.tex"
+    },
+    {
+      "id": "strategy",
+      "name": "Strategy",
+      "description": "Corporate strategy, market insights, and executive advisory focus.",
+      "file": "strategy.tex"
+    },
+    {
+      "id": "consulting",
+      "name": "Consulting",
+      "description": "Problem structuring, client impact, and transformation delivery focus.",
+      "file": "consulting.tex"
+    },
+    {
+      "id": "payments",
+      "name": "Payments",
+      "description": "Payments domain expertise, fintech, and transaction optimization focus.",
+      "file": "payments.tex"
+    }
+  ]
+}
