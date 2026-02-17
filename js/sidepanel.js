@@ -69,9 +69,9 @@ Mastercard | Director / Manager / Senior Consultant, Advisors | Aug 2016 - Aug 2
 \usepackage[top=.35in, bottom=.35in, left=.55in, right=.55in]{geometry}
 \setlength{\hintscolumnwidth}{1cm}
 \usepackage{import}`;
-  const FIXED_PUBLICATIONS_BULLET_LATEX = "\\item[\\textbullet] Publications:  ``Generative AI in Financial Services'' (Deloitte 2025); ``The Role of Generative AI in Payments'' (Deloitte 2024); ``The Impact of Digital Wallets on Consumer Spending'' (Mastercard 2023)";
+  const FIXED_PUBLICATIONS_BULLET_LATEX = "\\item[\\textbullet] Publications:  ``Generative AI in Financial Services'' (JP Morgan 2025); ``The Role of Generative AI in Payments'' (Deloitte 2024); ``The Impact of Digital Wallets on Consumer Spending'' (Mastercard 2023)";
   const FIXED_PUBLICATIONS_ITEMIZE_LATEX = `\\begin{itemize}\n${FIXED_PUBLICATIONS_BULLET_LATEX}\n\\end{itemize}`;
-  const FIXED_PUBLICATIONS_TEXT = `Publications: "Generative AI in Financial Services" (Deloitte 2025); "The Role of Generative AI in Payments" (Deloitte 2024); "The Impact of Digital Wallets on Consumer Spending" (Mastercard 2023)`;
+  const FIXED_PUBLICATIONS_TEXT = `Publications: "Generative AI in Financial Services" (JP Morgan 2025); "The Role of Generative AI in Payments" (Deloitte 2024); "The Impact of Digital Wallets on Consumer Spending" (Mastercard 2023)`;
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
