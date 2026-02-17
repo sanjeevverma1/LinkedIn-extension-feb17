@@ -69,6 +69,9 @@ Mastercard | Director / Manager / Senior Consultant, Advisors | Aug 2016 - Aug 2
 \usepackage[top=.35in, bottom=.35in, left=.55in, right=.55in]{geometry}
 \setlength{\hintscolumnwidth}{1cm}
 \usepackage{import}`;
+  const FIXED_PUBLICATIONS_BULLET_LATEX = String.raw`\item[\textbullet] Publications:  ``Generative AI in Financial Services'' (Deloitte 2025); ``The Role of Generative AI in Payments'' (Deloitte 2024); ``The Impact of Digital Wallets on Consumer Spending'' (Mastercard 2023)`;
+  const FIXED_PUBLICATIONS_ITEMIZE_LATEX = `\\begin{itemize}\n${FIXED_PUBLICATIONS_BULLET_LATEX}\n\\end{itemize}`;
+  const FIXED_PUBLICATIONS_TEXT = `Publications: "Generative AI in Financial Services" (Deloitte 2025); "The Role of Generative AI in Payments" (Deloitte 2024); "The Impact of Digital Wallets on Consumer Spending" (Mastercard 2023)`;
 
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
@@ -945,17 +948,38 @@ Mastercard | Director / Manager / Senior Consultant, Advisors | Aug 2016 - Aug 2
 	      : callOpenAIAPI(prompt);
 	  }
 
+  function hasPlaceholderToken(text) {
+    return /\[PLACEHOLDER\]/i.test(text || "");
+  }
+
+  async function fillPlaceholdersWithClaude(content, formatLabel) {
+    if (!hasPlaceholderToken(content)) return content;
+    return callAnthropicAPI(
+      `Rewrite this ${formatLabel} content by replacing every [PLACEHOLDER] token with specific, concrete values.
+Rules:
+- Preserve all existing structure and formatting.
+- Do not leave any [PLACEHOLDER] token in the output.
+- Return only the rewritten ${formatLabel}.
+
+${content}`
+    );
+  }
+
 	  async function generateResume() {
 	    navigate("resume");
 	    $("#resume-empty").classList.add("hidden");
 	    $("#resume-content").classList.add("hidden");
 	    $("#resume-loading").classList.remove("hidden");
 	    try {
+      if (!profile.anthropickey) throw new Error("Resume generation requires an Anthropic API key. Add it in Profile.");
 	      const selectedTemplate = getSelectedResumeTemplate();
-	      const md = await callLLMAPI(buildResumePrompt(currentJobData, profile, selectedTemplate));
+	      let md = await callAnthropicAPI(buildResumePrompt(currentJobData, profile, selectedTemplate));
+      md = await fillPlaceholdersWithClaude(md, "markdown");
 	      currentResumeMarkdown = md;
 	      // Generate LaTeX version
-	      currentResumeLatex = sanitizeLatex(await callLLMAPI(buildLatexResumePrompt(currentJobData, profile, md)));
+	      let latex = await callAnthropicAPI(buildLatexResumePrompt(currentJobData, profile, md));
+      latex = await fillPlaceholdersWithClaude(latex, "LaTeX");
+      currentResumeLatex = sanitizeLatex(latex);
 	      $("#resume-text").innerHTML = markdownToHtml(md);
 	      $("#resume-loading").classList.add("hidden");
 	      $("#resume-content").classList.remove("hidden");
@@ -1014,30 +1038,35 @@ Mastercard | Director / Manager / Senior Consultant, Advisors | Aug 2016 - Aug 2
     }
   }
 
-  function canGenerateForCurrentJob() {
-    if (!currentJobData) return false;
-    if (!getSelectedResumeTemplate()) {
-      alert("No resume base template available. Add one in Profile.");
+  function canGenerateForCurrentJob(docType = "resume") {
+	    if (!currentJobData) return false;
+	    if (!getSelectedResumeTemplate()) {
+	      alert("No resume base template available. Add one in Profile.");
+	      navigate("profile");
+	      return false;
+	    }
+    if (docType === "resume" && !profile.anthropickey) {
+      alert("Add your Anthropic API key in Profile. Resume generation always uses Anthropic Claude.");
       navigate("profile");
       return false;
     }
-    if (!hasProviderApiKey()) {
-      const providerLabel = selectedProvider() === "anthropic" ? "Anthropic" : "OpenAI";
-      alert(`Add your ${providerLabel} API key in Profile.`);
-      navigate("profile");
-      return false;
-    }
+	    if (docType !== "resume" && !hasProviderApiKey()) {
+	      const providerLabel = selectedProvider() === "anthropic" ? "Anthropic" : "OpenAI";
+	      alert(`Add your ${providerLabel} API key in Profile.`);
+	      navigate("profile");
+	      return false;
+	    }
     if (!profile.experience && !profile.expertise) { alert("Fill in your work experience in Profile."); navigate("profile"); return false; }
     return true;
   }
 
-  $("#btn-generate-resume").addEventListener("click", async () => {
-    if (!canGenerateForCurrentJob()) return;
-    await generateResume();
-  });
+	  $("#btn-generate-resume").addEventListener("click", async () => {
+	    if (!canGenerateForCurrentJob("resume")) return;
+	    await generateResume();
+	  });
 
   $("#btn-generate-cover").addEventListener("click", async () => {
-    if (!canGenerateForCurrentJob()) return;
+    if (!canGenerateForCurrentJob("cover")) return;
     await generateCoverLetter();
   });
 
@@ -1067,6 +1096,8 @@ Every resume is a tailored sales document. Apply these 5 layers:
 - Mirror the JD's exact terminology
 - Standard headings: Summary, Experience, Education, Additional
 - Target 1 page
+- Never output [PLACEHOLDER]. If details are uncertain, infer the best concrete value from context and keep it realistic.
+- In Additional, include this exact publications text: ${FIXED_PUBLICATIONS_TEXT}
 
 ## JOB POSTING
 **Title:** ${job.title}
@@ -1099,7 +1130,10 @@ Use this as a structural and stylistic baseline, then tailor aggressively to the
 ${templateContent ? `**Base Template Source (LaTeX):**\n${templateContent.slice(0, 18000)}\n` : ""}
 
 ## OUTPUT
-Generate a complete resume in clean markdown with: Header (name centered, contact on one line), SUMMARY, EXPERIENCE (reverse chron, retitled, bullets with •), EDUCATION, ADDITIONAL. Mark unconfirmed metrics with [PLACEHOLDER].`;
+Generate a complete resume in clean markdown with: Header (name centered, contact on one line), SUMMARY, EXPERIENCE (reverse chron, retitled, bullets with •), EDUCATION, ADDITIONAL.
+Do not include [PLACEHOLDER] anywhere.
+In ADDITIONAL, always include this Publications line exactly:
+${FIXED_PUBLICATIONS_TEXT}`;
 	  }
 
   function buildCoverLetterPrompt(job, prof) {
@@ -1173,7 +1207,7 @@ ${EXACT_MODERNCV_PREAMBLE}
 \\section{\\textsc{Additional}}
 \\vspace{-3pt}
 \\begin{itemize}
-\\item[\\textbullet] [additional]
+${FIXED_PUBLICATIONS_BULLET_LATEX}
 \\end{itemize}
 
 \\end{document}
@@ -1192,6 +1226,9 @@ ${markdownResume}
 - For progressive roles in same company, leave company/location empty on sub-roles
 - Use ASCII-safe LaTeX (no unicode bullets/quotes/dashes)
 - Escape LaTeX special characters in plain text (&, $, %, #, _, {, }, ~, ^, \\)
+- Do not include [PLACEHOLDER] anywhere in the LaTeX output
+- Set the Additional section to exactly this bullet:
+  ${FIXED_PUBLICATIONS_BULLET_LATEX}
 
 Output ONLY the complete .tex file.`;
   }
@@ -1596,8 +1633,7 @@ Output ONLY the complete .tex file.`;
 
     const summaryRaw = extractLatexSectionBody(tex, "Summary");
     const experienceRaw = extractLatexSectionBody(tex, "Experience");
-    const educationRaw = extractLatexSectionBody(tex, "Education");
-	    const additionalRaw = extractLatexSectionBody(tex, "Additional");
+	    const educationRaw = extractLatexSectionBody(tex, "Education");
 
     const summary = stripStandaloneVspace(summaryRaw)
       .replace(/^\\vspace\{[^}]*\}\s*/i, "")
@@ -1614,10 +1650,7 @@ Output ONLY the complete .tex file.`;
       ? educationBody
       : "\\begin{itemize}\n\\item[]{\\cventry{[Graduation]}{[Degree]}{[School]}{[Location]}{}{}}\n\\end{itemize}";
 
-	    const additionalBody = stripStandaloneVspace(additionalRaw);
-	    const additional = additionalBody.includes("\\begin{itemize}")
-	      ? additionalBody
-	      : "\\begin{itemize}\n\\item[\\textbullet] [Additional details]\n\\end{itemize}";
+	    const additional = FIXED_PUBLICATIONS_ITEMIZE_LATEX;
 
     return `${EXACT_MODERNCV_PREAMBLE}
 
