@@ -1,16 +1,35 @@
 {
   "manifest_version": 3,
-  "name": "LinkedIn Resume Tailor",
-  "version": "2.1.0",
-  "description": "Extracts job postings from LinkedIn, generates tailored resumes & cover letters, syncs to Google Drive & Overleaf.",
+  "name": "Job Resume Tailor",
+  "version": "3.0.0",
+  "description": "Extracts job postings from LinkedIn, Indeed, Glassdoor, Greenhouse, Lever, Workday & more. Generates tailored resumes & cover letters, syncs to Google Drive & Overleaf.",
   "permissions": [
     "activeTab",
     "storage",
     "sidePanel",
-    "identity"
+    "identity",
+    "scripting"
   ],
   "host_permissions": [
     "https://www.linkedin.com/*",
+    "https://*.indeed.com/*",
+    "https://*.glassdoor.com/*",
+    "https://*.glassdoor.co.*/*",
+    "https://*.greenhouse.io/*",
+    "https://boards.greenhouse.io/*",
+    "https://jobs.lever.co/*",
+    "https://*.myworkdayjobs.com/*",
+    "https://*.myworkday.com/*",
+    "https://*.ziprecruiter.com/*",
+    "https://*.simplyhired.com/*",
+    "https://*.monster.com/*",
+    "https://*.careerbuilder.com/*",
+    "https://*.wellfound.com/*",
+    "https://*.builtin.com/*",
+    "https://*.dice.com/*",
+    "https://*.remoteok.com/*",
+    "https://*.weworkremotely.com/*",
+    "https://*.flexjobs.com/*",
     "https://www.googleapis.com/*",
     "https://api.openai.com/*",
     "https://api.anthropic.com/*"
@@ -26,7 +45,30 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://www.linkedin.com/jobs/*"],
+      "matches": [
+        "https://www.linkedin.com/jobs/*",
+        "https://*.indeed.com/viewjob*",
+        "https://*.indeed.com/jobs*",
+        "https://*.indeed.com/rc/*",
+        "https://*.glassdoor.com/job-listing/*",
+        "https://*.glassdoor.com/Job/*",
+        "https://*.glassdoor.co.*/job-listing/*",
+        "https://boards.greenhouse.io/*/jobs/*",
+        "https://*.greenhouse.io/*/jobs/*",
+        "https://jobs.lever.co/*/*",
+        "https://*.myworkdayjobs.com/*/job/*",
+        "https://*.myworkday.com/*/job/*",
+        "https://*.ziprecruiter.com/jobs/*",
+        "https://*.simplyhired.com/job/*",
+        "https://*.monster.com/job-openings/*",
+        "https://*.careerbuilder.com/job-*",
+        "https://*.wellfound.com/jobs/*",
+        "https://*.builtin.com/job/*",
+        "https://*.dice.com/job-detail/*",
+        "https://*.remoteok.com/remote-jobs/*",
+        "https://*.weworkremotely.com/remote-jobs/*",
+        "https://*.flexjobs.com/jobs/*"
+      ],
       "js": ["js/content.js"],
       "css": ["css/content.css"],
       "run_at": "document_idle"
@@ -41,7 +83,7 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "LinkedIn Resume Tailor"
+    "default_title": "Job Resume Tailor"
   },
   "icons": {
     "16": "icons/icon16.png",

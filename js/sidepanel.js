@@ -498,6 +498,17 @@ Mastercard | Director / Manager / Senior Consultant, Advisors | Aug 2016 - Aug 2
     if (normalized.salary) { sal.textContent = normalized.salary; sal.classList.remove("hidden"); } else sal.classList.add("hidden");
     $("#job-remote").classList.toggle("hidden", !normalized.remote);
 
+    // Show source badge
+    const srcEl = $("#job-source");
+    if (srcEl) {
+      if (normalized.source) {
+        srcEl.textContent = getSourceLabel(normalized.source);
+        srcEl.classList.remove("hidden");
+      } else {
+        srcEl.classList.add("hidden");
+      }
+    }
+
     const desc = normalized.description || "No description available.";
     $("#job-description").textContent = desc;
     $("#job-requirements").textContent = normalized.requirements || "See description.";
@@ -547,33 +558,98 @@ Mastercard | Director / Manager / Senior Consultant, Advisors | Aug 2016 - Aug 2
     if (isLoading) {
       mainBtn.dataset.originalText = mainBtn.textContent;
       mainBtn.textContent = "Extracting...";
-      setExtractStatus("Reading current LinkedIn posting...", "");
+      setExtractStatus("Reading current job posting...", "");
     } else {
-      mainBtn.textContent = mainBtn.dataset.originalText || "Extract Current LinkedIn Job";
+      mainBtn.textContent = mainBtn.dataset.originalText || "Extract Current Job Posting";
     }
   }
 
-  async function extractFromActiveLinkedInTab() {
+  // List of supported job board domains for URL validation
+  const SUPPORTED_JOB_DOMAINS = [
+    "linkedin.com", "indeed.com", "glassdoor.com", "glassdoor.co",
+    "greenhouse.io", "lever.co", "myworkdayjobs.com", "myworkday.com",
+    "workday.com", "ziprecruiter.com", "simplyhired.com", "monster.com",
+    "careerbuilder.com", "wellfound.com", "angel.co", "builtin.com",
+    "dice.com", "remoteok.com", "weworkremotely.com", "flexjobs.com",
+  ];
+
+  function isJobBoardUrl(url) {
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    // Check known domains
+    if (SUPPORTED_JOB_DOMAINS.some((d) => lower.includes(d))) return true;
+    // Also allow any URL with job/career keywords
+    if (lower.includes("/job") || lower.includes("/career") || lower.includes("/position") || lower.includes("/opening")) return true;
+    return false;
+  }
+
+  function getSourceLabel(source) {
+    const labels = {
+      linkedin: "LinkedIn", indeed: "Indeed", glassdoor: "Glassdoor",
+      greenhouse: "Greenhouse", lever: "Lever", workday: "Workday",
+      ziprecruiter: "ZipRecruiter", simplyhired: "SimplyHired",
+      monster: "Monster", careerbuilder: "CareerBuilder",
+      wellfound: "Wellfound", builtin: "Built In", dice: "Dice",
+      remoteok: "RemoteOK", weworkremotely: "WeWorkRemotely",
+      flexjobs: "FlexJobs", generic: "Job Board",
+    };
+    return labels[source] || source || "Job Board";
+  }
+
+  async function extractFromActiveTab() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (!tab || !tab.url?.includes("linkedin.com")) {
-      throw new Error("Please navigate to a LinkedIn job posting first.");
+    if (!tab || !tab.url) {
+      throw new Error("No active tab found. Open a job posting and try again.");
     }
 
-    const response = await Promise.race([
-      new Promise((resolve, reject) => {
-        chrome.tabs.sendMessage(tab.id, { action: "extractJob" }, (payload) => {
-          if (chrome.runtime.lastError) {
-            reject(new Error("Could not extract from this tab. Refresh the LinkedIn page and try again."));
-            return;
-          }
-          resolve(payload);
+    // Try sending message to existing content script first
+    let response;
+    try {
+      response = await Promise.race([
+        new Promise((resolve, reject) => {
+          chrome.tabs.sendMessage(tab.id, { action: "extractJob" }, (payload) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+              return;
+            }
+            resolve(payload);
+          });
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
+      ]);
+    } catch (e) {
+      // Content script not injected yet — dynamically inject it
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["js/content.js"],
         });
-      }),
-      new Promise((_, reject) => setTimeout(() => reject(new Error("Extraction timed out. Refresh LinkedIn and try again.")), 8000)),
-    ]);
+        await chrome.scripting.insertCSS({
+          target: { tabId: tab.id },
+          files: ["css/content.css"],
+        });
+      } catch (injectErr) {
+        throw new Error("Could not access this page. Make sure you're on a job posting and try again.");
+      }
+
+      // Wait a moment for the script to initialize, then retry
+      await new Promise((r) => setTimeout(r, 500));
+      response = await Promise.race([
+        new Promise((resolve, reject) => {
+          chrome.tabs.sendMessage(tab.id, { action: "extractJob" }, (payload) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error("Could not extract from this tab. Refresh the page and try again."));
+              return;
+            }
+            resolve(payload);
+          });
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Extraction timed out. Refresh the page and try again.")), 8000)),
+      ]);
+    }
 
     if (!response?.success || !response.data) {
-      throw new Error("Could not find job details. Open a specific LinkedIn job posting and retry.");
+      throw new Error("Could not find job details. Open a specific job posting and retry.");
     }
     return response.data;
   }
@@ -582,7 +658,7 @@ Mastercard | Director / Manager / Senior Consultant, Advisors | Aug 2016 - Aug 2
     if (extractionInFlight) return;
     setExtractionLoading(true);
     try {
-      const data = await extractFromActiveLinkedInTab();
+      const data = await extractFromActiveTab();
       displayJobData(data);
       navigate("extract");
     } catch (e) {
@@ -620,7 +696,7 @@ Mastercard | Director / Manager / Senior Consultant, Advisors | Aug 2016 - Aug 2
       .map((j) => `
         <div class="saved-card">
           <div class="saved-card-title">${escHtml(j.title || "Untitled Position")}</div>
-          <div class="saved-card-sub">${escHtml(j.company || "Unknown Company")} · ${timeAgo(j.extractedAt)}</div>
+          <div class="saved-card-sub">${escHtml(j.company || "Unknown Company")}${j.source ? " · " + escHtml(getSourceLabel(j.source)) : ""} · ${timeAgo(j.extractedAt)}</div>
           <div class="saved-card-actions">
             <button class="btn btn-sm extract-load" data-id="${j.id}">Load</button>
             <button class="btn btn-sm extract-generate" data-id="${j.id}">Open for Generation</button>
@@ -670,6 +746,7 @@ Mastercard | Director / Manager / Senior Consultant, Advisors | Aug 2016 - Aug 2
           <div class="saved-card-title">${escHtml(j.title)}</div>
           <div class="saved-card-sub">${escHtml(j.company)}${j.location ? " · " + escHtml(j.location) : ""}</div>
           <div class="saved-card-meta">
+            ${j.source ? `<span class="meta-tag source">${escHtml(getSourceLabel(j.source))}</span>` : ""}
             ${j.salary ? `<span class="meta-tag salary">${escHtml(j.salary)}</span>` : ""}
             ${j.remote ? '<span class="meta-tag remote">Remote</span>' : ""}
             ${j.employmentType ? `<span class="meta-tag">${escHtml(j.employmentType)}</span>` : ""}
@@ -1854,7 +1931,8 @@ ${additional}
     if (msg.action === "jobDataExtracted" && msg.data) {
       setExtractionLoading(false);
       displayJobData(msg.data);
-      setExtractStatus("Job extracted from LinkedIn and saved.", "success");
+      const sourceLabel = getSourceLabel(msg.data.source);
+      setExtractStatus(`Job extracted from ${sourceLabel} and saved.`, "success");
       navigate("extract");
     }
   });

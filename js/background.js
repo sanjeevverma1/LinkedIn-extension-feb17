@@ -1,6 +1,6 @@
-// background.js — Service worker
+// background.js — Service worker for Job Resume Tailor
 chrome.runtime.onInstalled.addListener(() => {
-  console.log("[LinkedIn Resume Tailor] Extension installed v2.1");
+  console.log("[Job Resume Tailor] Extension installed v3.0");
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -11,6 +11,20 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     chrome.runtime.sendMessage(msg).catch(() => {
       chrome.storage.session.set({ pendingJobData: msg });
     });
+  }
+  // Dynamically inject content script on pages not matched by manifest
+  if (msg.action === "injectContentScript") {
+    const tabId = msg.tabId;
+    if (tabId) {
+      chrome.scripting.executeScript({
+        target: { tabId },
+        files: ["js/content.js"],
+      }).catch((err) => console.warn("[Job Resume Tailor] Could not inject content script:", err));
+      chrome.scripting.insertCSS({
+        target: { tabId },
+        files: ["css/content.css"],
+      }).catch(() => {});
+    }
   }
 });
 

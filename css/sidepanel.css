@@ -169,6 +169,7 @@ body {
 }
 .meta-tag.salary { background: var(--green-500); color: white; }
 .meta-tag.remote { background: var(--blue-100); color: var(--blue-700); }
+.meta-tag.source { background: #ede9fe; color: #6d28d9; font-weight: 600; }
 
 /* ── Collapsible ── */
 .section-collapsible {

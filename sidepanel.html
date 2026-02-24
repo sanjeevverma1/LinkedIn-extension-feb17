@@ -50,7 +50,7 @@
             </div>
             <div class="action-text">
               <strong>Extract & Generate</strong>
-              <span>Extract current LinkedIn job → create resume & cover letter</span>
+              <span>Extract current job posting → create resume & cover letter</span>
             </div>
           </button>
           <button class="action-card" id="home-saved-jobs">
@@ -95,7 +95,7 @@
     <!-- ═══════ EXTRACT VIEW ═══════ -->
     <div class="view" id="view-extract">
       <div class="extract-controls">
-        <button id="btn-extract" class="btn btn-primary btn-lg">Extract Current LinkedIn Job</button>
+        <button id="btn-extract" class="btn btn-primary btn-lg">Extract Current Job Posting</button>
         <div class="action-row">
           <button id="btn-open-saved-jobs" class="btn btn-sm">Open Saved Jobs</button>
         </div>
@@ -104,7 +104,7 @@
       <div id="no-job" class="empty-state">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         <h3>No job detected</h3>
-        <p>Navigate to a job posting on <strong>LinkedIn</strong> and click "Tailor Resume", or click extract above.</p>
+        <p>Navigate to a job posting on <strong>LinkedIn, Indeed, Glassdoor, Greenhouse, Lever, Workday</strong>, or any job board and click extract above.</p>
       </div>
       <div id="job-details" class="hidden">
         <div class="generate-provider-row">
@@ -128,6 +128,7 @@
           <h2 id="job-title" class="job-title"></h2>
           <p id="job-company" class="job-company"></p>
           <div class="job-meta">
+            <span id="job-source" class="meta-tag source hidden"></span>
             <span id="job-location" class="meta-tag"></span>
             <span id="job-type" class="meta-tag"></span>
             <span id="job-salary" class="meta-tag salary hidden"></span>
